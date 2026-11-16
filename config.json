@@ -1,0 +1,94 @@
+{
+    "workdir": "sessions",
+    "target_mode": "scratch",
+    "target_project": null,
+    "cdp_port": 9222,
+    "chrome_profile_path": "C:\\Orchestrator\\ChromeProfile",
+    "injection_mode": "paste",
+    "zai_upload_method": "cdp",
+    "abs_paths_ok": true,
+    "debug": true,
+    "opencode_input_xy": [
+        142,
+        877
+    ],
+    "opencode_model": "opencode/mimo-v2.5-free",
+    "opencode_transport": "run",
+    "opencode_control": "cli",
+    "opencode_session_per_run": true,
+    "timeouts": {
+        "T_open": 900,
+        "T_zai": 600,
+        "T_stable_max": 120
+    },
+    "thresholds": {
+        "paste_dialog_kb": null,
+        "zai_ctx_kb": 100
+    },
+    "session_source": null,
+    "browser_probe": {
+        "enabled": true,
+        "preferred": [
+            "chrome",
+            "edge",
+            "firefox"
+        ],
+        "auto_commit": false
+    },
+    "providers": [
+        {
+            "id": "glm",
+            "name": "GLM / z.ai",
+            "url": "https://chat.z.ai",
+            "login_url": "https://chat.z.ai/",
+            "domains": ["chat.z.ai"],
+            "detector": "cookie",
+            "login_check": {"method": "cookie", "name": "token"},
+            "input_selector": "#chat-input",
+            "send_selector": "#send-message-button",
+            "new_chat_selector": "text=New Chat",
+            "response_selector": ".markdown-body"
+        },
+        {
+            "id": "deepseek",
+            "name": "DeepSeek",
+            "url": "https://chat.deepseek.com",
+            "login_url": "https://chat.deepseek.com/",
+            "domains": ["chat.deepseek.com"],
+            "detector": "localstorage",
+            "ls_hint": "Token",
+            "login_check": {"method": "localstorage", "name": "userToken"},
+            "input_selector": "textarea#chat-input",
+            "send_selector": "#chat-input-send",
+            "new_chat_selector": "text=New Chat",
+            "response_selector": ".markdown-body"
+        },
+        {
+            "id": "qwen",
+            "name": "Qwen",
+            "url": "https://chat.qwen.ai",
+            "login_url": "https://chat.qwen.ai/",
+            "domains": ["chat.qwen.ai"],
+            "detector": "cookie",
+            "login_check": {"method": "cookie", "name": "token"},
+            "input_selector": "#dropzone-container textarea",
+            "attach_selector": "#dropzone-container [class*='attach'], #dropzone-container [class*='upload']",
+            "send_selector": "button[aria-label='Send']",
+            "new_chat_selector": "text=New Chat",
+            "response_selector": ".message-content"
+        },
+        {
+            "id": "google",
+            "name": "Google AI (Gemini)",
+            "url": "https://www.google.com/search?q=test&udm=50",
+            "login_url": "https://accounts.google.com/",
+            "domains": ["google.com"],
+            "detector": "cookie",
+            "login_check": {"method": "cookie", "name": "__Secure-1PSID"},
+            "input_selector": "#ti6dpd",
+            "send_selector": "#ti6dpd",
+            "new_chat_selector": null,
+            "response_selector": "[data-ai-response]"
+        }
+    ]
+}

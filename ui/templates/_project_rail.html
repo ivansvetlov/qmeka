@@ -1,0 +1,35 @@
+<aside class="project-rail" id="projectRail" aria-label="Qmeka projects">
+  <div class="project-rail__head">
+    <span class="project-rail__title">projects</span>
+    <button type="button" class="project-rail__add" id="projectRailAdd" data-tip="New Qmeka project">+</button>
+  </div>
+  <div class="project-rail__list" id="projectRailList"></div>
+  <div class="project-rail__foot">
+    Qmeka desks — not git repos, not runs. Switch to work another folder without mixing pipelines.
+  </div>
+</aside>
+
+<div class="project-modal" id="projectModal" hidden>
+  <div class="project-modal__card">
+    <div class="project-modal__kicker">new project</div>
+    <div class="project-modal__title">Open another desk</div>
+    <label class="project-modal__label">name</label>
+    <input class="project-modal__input" id="projectModalName" type="text" placeholder="e.g. nasedniki">
+    <div class="project-modal__choices">
+      <button type="button" class="project-modal__choice on" id="projectModeScratch" data-mode="scratch">
+        <span class="project-modal__choice-title">Scratch</span>
+        <span class="project-modal__choice-hint">Sandbox. Sketches stay in the run folder.</span>
+      </button>
+      <button type="button" class="project-modal__choice" id="projectModeFolder" data-mode="project">
+        <span class="project-modal__choice-title">Attach folder</span>
+        <span class="project-modal__choice-hint">Agents edit this repo. Pipeline stays on this desk.</span>
+      </button>
+    </div>
+    <div class="project-modal__folders" id="projectModalFolders" hidden></div>
+    <input class="project-modal__input" id="projectModalPath" type="text" placeholder="C:\Workspace\projects\…" hidden>
+    <div class="project-modal__actions">
+      <button type="button" class="setup-btn" id="projectModalCancel">Cancel</button>
+      <button type="button" class="setup-btn setup-btn--accent" id="projectModalSave">Create</button>
+    </div>
+  </div>
+</div>

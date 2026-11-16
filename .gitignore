@@ -1,0 +1,21 @@
+# артефакты и состояние прогонов
+qmeka-projects/
+sessions/
+out/
+*.log
+run.log
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# браузерные профили и дампы
+ChromeProfile/
+*.har
+
+# локальные конфиги
+config.local.json
+.env

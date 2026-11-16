@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qmeka — launch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/qmeka-chrome.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:14px; min-height:100vh; }
+
+.main { max-width:700px; margin:0 auto; padding:48px 24px; }
+.page-title { font-family:var(--font-serif); font-size:28px; font-weight:700; margin-bottom:8px; }
+.page-sub { font-size:14px; color:var(--text-dim); margin-bottom:32px; line-height:1.6; }
+
+.card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
+.card__label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim); margin-bottom:8px; }
+
+textarea { width:100%; min-height:120px; padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:14px; line-height:1.6; resize:vertical; transition:var(--transition); }
+textarea:focus { outline:none; border-color:var(--accent); }
+textarea::placeholder { color:var(--text-dim); }
+
+.row { display:flex; gap:12px; }
+.row > * { flex:1; }
+select { width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:13px; cursor:pointer; transition:var(--transition); }
+select:focus { outline:none; border-color:var(--accent); }
+
+.presets { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.preset { padding:5px 12px; border-radius:var(--radius-pill); border:1px solid var(--border); background:transparent; color:var(--text-dim); font-size:12px; cursor:pointer; transition:var(--transition); font-family:var(--font-sans); }
+.preset:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+
+.checklist { margin-top:20px; }
+.checklist__title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim); margin-bottom:10px; }
+.check { display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px; }
+.check__dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.check__dot--ok { background:var(--green); }
+.check__dot--fail { background:var(--red); }
+.check__text { color:var(--text-muted); }
+.check__action { color:var(--accent); font-size:12px; text-decoration:none; margin-left:6px; white-space:nowrap; }
+.check__action:hover { text-decoration:underline; }
+
+.btn-start { width:100%; padding:14px; border-radius:var(--radius); border:none; background:var(--accent); color:#0f0d0a; font-family:var(--font-serif); font-size:16px; font-weight:700; cursor:pointer; transition:var(--transition); margin-top:20px; }
+.btn-start:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.btn-start:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.btn-start .hotkey { font-family:var(--font-mono); font-size:11px; opacity:.6; margin-left:8px; }
+</style>
+</head>
+<body>
+{% set active_nav = 'launch' %}
+{% include "_header.html" %}
+{% include "_project_rail.html" %}
+
+<main class="main">
+  <div class="page-title">figure it out</div>
+  <div class="page-sub">Drop a complex problem. Qmeka designs the pipeline — the agents figure it out.{% if target_hint %} <span style="color:var(--accent)">{{ target_hint }}</span>{% endif %}</div>
+
+  <form id="launchForm">
+    <div class="card">
+      <div class="card__label">task</div>
+      <textarea name="task" placeholder="What shall we figure out today? e.g. a JWT auth module with rate limiting…" required></textarea>
+      <div class="presets">
+        <button type="button" class="preset" onclick="fillTask(this.textContent)">JWT auth module</button>
+        <button type="button" class="preset" onclick="fillTask(this.textContent)">HTTP server</button>
+        <button type="button" class="preset" onclick="fillTask(this.textContent)">user DB refactor</button>
+        <button type="button" class="preset" onclick="fillTask(this.textContent)">monitoring system</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <div class="card__label">iterations</div>
+        <select name="n">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Generate Pipeline -->
+    <div class="card" id="generateSection">
+      <div class="card__label">pipeline</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn-start" id="btnGenerate" style="width:auto;margin:0;padding:10px 20px;font-size:14px;">
+          ⚡ generate optimal pipeline
+        </button>
+        <span style="font-size:12px;color:var(--text-dim);">or</span>
+        <a href="/pipeline" style="font-size:12px;color:var(--accent);text-decoration:none;">build manually →</a>
+      </div>
+      <div id="generateStatus" style="margin-top:10px;font-size:12px;color:var(--text-dim);display:none;"></div>
+      <div id="pipelinePreview" style="margin-top:12px;display:none;">
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">generated pipeline</div>
+        <div id="pipelinePreviewName" style="font-family:var(--font-serif);font-size:16px;margin-bottom:4px;"></div>
+        <div id="pipelinePreviewDesc" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;"></div>
+        <div id="pipelinePreviewReasoning" style="font-size:12px;color:var(--accent);font-style:italic;margin-bottom:8px;"></div>
+        <div id="pipelinePreviewStages" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        <input type="hidden" name="generated_pipeline" id="generatedPipeline" value="">
+      </div>
+    </div>
+
+    <button type="submit" class="btn-start" id="btnStart">
+      figure it out →<span class="hotkey">Ctrl+Shift+Z</span>
+    </button>
+  </form>
+</main>
+
+{% include "_setup_wizard.html" %}
+<script src="/static/qmeka-chrome.js"></script>
+<script>
+function fillTask(text) {
+  document.querySelector('textarea[name="task"]').value = text;
+}
+
+/* Generate Pipeline */
+document.getElementById('btnGenerate').addEventListener('click', function() {
+  var task = document.querySelector('textarea[name="task"]').value.trim();
+  if (!task) { alert('Enter a task first'); return; }
+
+  var btn = this;
+  var status = document.getElementById('generateStatus');
+  var preview = document.getElementById('pipelinePreview');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Qmeka.u…';
+  status.style.display = 'block';
+  status.textContent = 'Figuring it out — designing the optimal pipeline…';
+  status.style.color = 'var(--accent)';
+  preview.style.display = 'none';
+
+  fetch('/api/generate-pipeline', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({task: task})
+  }).then(r => r.json()).then(data => {
+    btn.disabled = false;
+    btn.textContent = '⚡ generate optimal pipeline';
+
+    if (!data.ok) {
+      status.textContent = 'Error: ' + (data.error || 'unknown');
+      status.style.color = 'var(--red)';
+      return;
+    }
+
+    var p = data.pipeline;
+    status.textContent = 'Figured it out!';
+    status.style.color = 'var(--green)';
+
+    document.getElementById('pipelinePreviewName').textContent = p.name || 'unnamed';
+    document.getElementById('pipelinePreviewDesc').textContent = p.description || '';
+    document.getElementById('pipelinePreviewReasoning').textContent = p.reasoning || '';
+
+    // Render stages as chips
+    var stagesHtml = '';
+    (p.stages || []).forEach(function(s, i) {
+      var color = s.type === 'reviewer' ? 'var(--green)' : 'var(--accent)';
+      stagesHtml += '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;border:1px solid ' + color + ';font-size:11px;font-family:var(--font-mono);color:' + color + ';">';
+      stagesHtml += (i + 1) + '. ' + (s.role || s.id);
+      if (s.service && s.service !== 'opencode') stagesHtml += ' <span style="opacity:.6">(' + s.service + ')</span>';
+      stagesHtml += '</span>';
+      if (i < p.stages.length - 1) stagesHtml += '<span style="color:var(--text-dim);font-size:11px;">→</span>';
+    });
+    document.getElementById('pipelinePreviewStages').innerHTML = stagesHtml;
+
+    document.getElementById('generatedPipeline').value = JSON.stringify(p);
+    preview.style.display = 'block';
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = '⚡ generate optimal pipeline';
+    status.textContent = 'Network error: ' + err.message;
+    status.style.color = 'var(--red)';
+  });
+});
+
+/* Launch */
+document.getElementById('launchForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnStart');
+  btn.disabled = true;
+  btn.textContent = 'Qmeka.u…';
+
+  fetch('/api/launch', {
+    method: 'POST',
+    body: new FormData(e.target)
+  }).then(r => r.json()).then(data => {
+    if (data.ok) {
+      window.location.href = '/';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = 'figure it out →<span class="hotkey">Ctrl+Shift+Z</span>';
+      alert('error: ' + (data.error || 'unknown'));
+    }
+  });
+});
+
+/* Hotkey */
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+    e.preventDefault();
+    document.getElementById('launchForm').dispatchEvent(new Event('submit'));
+  }
+});
+</script>
+</body>
+</html>
+

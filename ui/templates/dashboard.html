@@ -1,0 +1,2322 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qmeka — dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/qmeka-chrome.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   CSS TOKENS & THEMES
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --shadow-card-hover: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+  --sidebar-width: 320px;
+}
+
+/* Dark Warm Honey */
+[data-theme="dark"] {
+  --bg: #0f0d0a;
+  --bg-surface: #1a1714;
+  --bg-surface-alt: #242019;
+  --bg-elevated: #2e2923;
+  --text: #f5f0e8;
+  --text-muted: #a89e8c;
+  --text-dim: #7a7062;
+  --accent: #f0a830;
+  --accent-soft: rgba(240,168,48,.12);
+  --accent-hover: #f5c050;
+  --border: rgba(240,168,48,.15);
+  --border-strong: rgba(240,168,48,.30);
+  --log-info: #a89e8c;
+  --log-warn: #f0a830;
+  --log-error: #e85d4a;
+  --stage-done: #6ec87a;
+  --stage-active: #f0a830;
+  --stage-pending: #7a7062;
+  --code-bg: #151210;
+  --glow-color: rgba(240,168,48,.08);
+}
+
+/* Light Paper */
+[data-theme="light"] {
+  --bg: #faf8f4;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #f3efe8;
+  --bg-elevated: #ede8df;
+  --text: #1a1714;
+  --text-muted: #6b6255;
+  --text-dim: #9a8f7f;
+  --accent: #c47a10;
+  --accent-soft: rgba(196,122,16,.08);
+  --accent-hover: #a86810;
+  --border: rgba(26,23,20,.10);
+  --border-strong: rgba(26,23,20,.20);
+  --log-info: #6b6255;
+  --log-warn: #c47a10;
+  --log-error: #c94430;
+  --stage-done: #3a9a4a;
+  --stage-active: #c47a10;
+  --stage-pending: #9a8f7f;
+  --code-bg: #f3efe8;
+  --glow-color: rgba(196,122,16,.06);
+}
+
+/* Cyber Phosphor */
+[data-theme="cyber"] {
+  --bg: #050a05;
+  --bg-surface: #0a140a;
+  --bg-surface-alt: #0f1f0f;
+  --bg-elevated: #142814;
+  --text: #d4ffc4;
+  --text-muted: #7ab86a;
+  --text-dim: #4a7a3a;
+  --accent: #39ff14;
+  --accent-soft: rgba(57,255,20,.10);
+  --accent-hover: #5fff3a;
+  --border: rgba(57,255,20,.15);
+  --border-strong: rgba(57,255,20,.30);
+  --log-info: #7ab86a;
+  --log-warn: #39ff14;
+  --log-error: #ff3a3a;
+  --stage-done: #39ff14;
+  --stage-active: #39ff14;
+  --stage-pending: #4a7a3a;
+  --code-bg: #080e08;
+  --glow-color: rgba(57,255,20,.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+
+a { color: var(--accent); text-decoration: none; transition: color var(--transition); }
+a:hover { color: var(--accent-hover); }
+::selection { background: var(--accent-soft); color: var(--text); }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOUSE GLOW
+   ═══════════════════════════════════════════════════════════════ */
+.mouse-glow {
+  position: fixed;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity .3s;
+  opacity: 0;
+}
+.mouse-glow.active { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   FLOAT DOTS
+   ═══════════════════════════════════════════════════════════════ */
+.float-dots {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.float-dot {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .12;
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+  10%  { opacity: .12; }
+  90%  { opacity: .12; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROGRESS BAR
+   ═══════════════════════════════════════════════════════════════ */
+.progress-bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 3px; z-index: 1000;
+  background: var(--bg-surface);
+}
+.progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  width: 0%;
+  transition: width .4s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER / NAV
+   ═══════════════════════════════════════════════════════════════ */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.header__inner {
+  display: grid;
+  grid-template-columns: 168px 1fr auto;
+  align-items: center;
+  height: 64px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  gap: 16px;
+}
+.logo {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -.02em;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.logo__blink {
+  display: inline-block;
+  width: 2px; height: 1.1em;
+  background: var(--accent);
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.nav { display: flex; align-items: center; gap: 8px; }
+.nav__link {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition);
+  text-transform: lowercase;
+}
+.nav__link:hover, .nav__link.active {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.nav__link.active { color: var(--accent); }
+
+/* Sidebar toggle (mobile) */
+.sidebar-toggle {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  color: var(--text-muted);
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.sidebar-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-surface-alt);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+}
+.theme-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+.theme-btn[data-theme="dark"]  { background: #1a1714; }
+.theme-btn[data-theme="light"] { background: #faf8f4; }
+.theme-btn[data-theme="cyber"] { background: #0a140a; }
+.theme-btn.active { border-color: var(--accent); transform: scale(1.1); }
+.theme-btn:hover { transform: scale(1.15); }
+
+/* Connection pill */
+.stats-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 248px;
+  min-width: 248px;
+  height: 34px;
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: var(--text-muted);
+  background: var(--bg-surface-alt);
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  appearance: none;
+}
+.stats-pill__dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--stage-done);
+  animation: pulse-dot 2s ease infinite;
+}
+.stats-pill__dot.disconnected {
+  background: var(--log-error);
+  animation: none;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHELL LAYOUT — main + sidebar
+   ═══════════════════════════════════════════════════════════════ */
+.shell {
+  display: flex;
+  max-width: 1600px;
+  margin: 0 auto;
+  min-height: calc(100vh - 64px);
+}
+
+/* ═══ MAIN AREA ═══ */
+.main-area {
+  flex: 1;
+  min-width: 0;
+  padding: 48px 40px 80px;
+  overflow-y: auto;
+}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: calc(100vh - 64px);
+  position: sticky;
+  top: 64px;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+.sidebar__section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar__section:last-child { border-bottom: none; }
+
+.sidebar__title {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sidebar__title .icon { font-size: .8rem; opacity: .6; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PIPELINE STATUS HERO
+   ═══════════════════════════════════════════════════════════════ */
+.hero {
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+.hero__task-name {
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  min-height: 1.3em;
+}
+.hero__task-name .cursor {
+  display: inline-block;
+  width: 3px; height: .9em;
+  background: var(--accent);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+.hero__badges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.hero__badge {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.hero__badge--iter {
+  color: var(--text-muted);
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border);
+}
+.hero__badge--status { }
+.hero__badge--status.running  { background: rgba(240,168,48,.12); color: var(--stage-active); border: 1px solid rgba(240,168,48,.25); }
+.hero__badge--status.done     { background: rgba(110,200,122,.12); color: var(--stage-done); border: 1px solid rgba(110,200,122,.25); }
+.hero__badge--status.error    { background: rgba(232,93,74,.12);   color: var(--log-error);  border: 1px solid rgba(232,93,74,.25); }
+.hero__badge--status.idle     { background: var(--bg-surface-alt); color: var(--text-dim);   border: 1px solid var(--border); }
+
+.hero__elapsed {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: var(--text-dim);
+}
+.hero__verdict {
+  font-family: var(--font-serif);
+  font-size: .95rem;
+  color: var(--accent);
+  font-style: italic;
+}
+.hero__progress {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-surface-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hero__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--stage-done), var(--accent));
+  border-radius: 3px;
+  transition: width .5s ease;
+  position: relative;
+}
+.hero__progress-fill.running::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.2) 50%, transparent 100%);
+  animation: shimmer 1.5s ease infinite;
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PIPELINE FLOW — visual node graph
+   ═══════════════════════════════════════════════════════════════ */
+.pipeline-flow {
+  margin-bottom: 40px;
+}
+.pipeline-flow__title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pipeline-flow__title .icon { font-size: .9rem; opacity: .6; }
+
+/* ── Iteration wheel ── */
+.iter-wheel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+}
+.iter-wheel__btn {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: .9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.iter-wheel__btn:hover { border-color: var(--accent); color: var(--accent); }
+.iter-wheel__btn:disabled { opacity: .35; cursor: default; pointer-events: none; }
+.iter-wheel__dial {
+  position: relative;
+  width: 40px; height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  user-select: none;
+}
+.iter-wheel__ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.iter-wheel__track {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 3;
+}
+.iter-wheel__arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 106.8; /* 2πr, r=17 */
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset .35s ease;
+}
+.iter-wheel__num {
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--accent);
+  z-index: 1;
+}
+.iter-wheel__label {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* Compact pipeline (default view) */
+.pipeline-compact {
+  padding: 16px 0;
+}
+.pipeline-compact__stages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.compact-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  font-size: .78rem;
+  transition: all var(--transition);
+}
+.compact-chip.done { border-color: var(--stage-done); color: var(--stage-done); }
+.compact-chip.active { border-color: var(--stage-active); color: var(--stage-active); animation: chip-pulse 2s ease infinite; }
+.compact-chip.pending { opacity: .5; }
+.compact-chip.error { border-color: #ef4444; color: #ef4444; }
+@keyframes chip-pulse {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 8px rgba(240,168,48,.3); }
+}
+.compact-chip__icon { font-size: .7rem; }
+.compact-chip__label { font-family: var(--font-mono); font-size: .75rem; }
+.compact-chip__agent {
+  font-size: .65rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--bg-base);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.compact-arrow {
+  color: var(--text-muted);
+  font-size: .7rem;
+  opacity: .4;
+}
+
+/* Full editor (expanded) */
+.pipeline-editor {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.pipeline-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pipeline-stage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  transition: border-color var(--transition);
+}
+.pipeline-stage-row:hover { border-color: var(--accent); }
+.pipeline-stage-row.dragging { opacity: .5; border-style: dashed; }
+.pipeline-stage-row.drag-over { border-color: var(--accent); background: var(--bg-base); }
+.pipeline-stage-num {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  color: var(--text-muted);
+  min-width: 18px;
+}
+.pipeline-stage-name {
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  font-weight: 600;
+  min-width: 100px;
+  flex: 1;
+}
+.pipeline-stage-name input {
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  width: 100%;
+  outline: none;
+  padding: 2px 0;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition);
+}
+.pipeline-stage-name input:focus { border-bottom-color: var(--accent); }
+.pipeline-stage-role {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+}
+.pipeline-stage-role select {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.pipeline-stage-agent {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+}
+.pipeline-stage-agent select {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.pipeline-stage-del {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: .9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all var(--transition);
+}
+.pipeline-stage-del:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+.pipeline-stage-grip {
+  color: var(--text-muted);
+  cursor: grab;
+  font-size: .8rem;
+  user-select: none;
+  padding: 2px 4px;
+}
+.pipeline-stage-grip:active { cursor: grabbing; }
+@keyframes ripple {
+  0%   { transform: scale(1); opacity: .3; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+/* ═══════════════════════════════════════════════════════════════
+   ARTIFACTS — vertical flow with connecting line
+   ═══════════════════════════════════════════════════════════════ */
+.artifacts {
+  margin-bottom: 40px;
+}
+.artifacts__title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.artifacts__title .icon { font-size: .9rem; opacity: .6; }
+
+.artifact-flow {
+  position: relative;
+  padding-left: 32px;
+}
+.artifact-flow::before {
+  content: '';
+  position: absolute;
+  left: 15px; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.artifact-item {
+  position: relative;
+  margin-bottom: 24px;
+}
+.artifact-item::before {
+  content: '';
+  position: absolute;
+  left: -25px; top: 20px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--stage-done);
+  border: 2px solid var(--bg);
+  z-index: 1;
+}
+.artifact-item.pending::before {
+  background: var(--stage-pending);
+}
+.artifact-item.active::before {
+  background: var(--stage-active);
+  animation: pulse-dot 1.5s ease infinite;
+}
+
+/* Code window */
+.code-window {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.code-window__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+.code-window__dots {
+  display: flex; gap: 6px;
+}
+.code-window__dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.code-window__title {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--text-dim);
+}
+.copy-btn {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.copy-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.copy-btn.copied {
+  color: var(--stage-done);
+  border-color: var(--stage-done);
+}
+.code-window__body {
+  padding: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: .76rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.code-window__body::-webkit-scrollbar { width: 6px; }
+.code-window__body::-webkit-scrollbar-track { background: transparent; }
+.code-window__body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.artifact-pending {
+  padding: 20px;
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  color: var(--text-dim);
+  font-style: italic;
+  background: var(--bg-surface-alt);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR — LOG STREAM
+   ═══════════════════════════════════════════════════════════════ */
+.log-viewer {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  height: 300px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  line-height: 1.7;
+  scroll-behavior: smooth;
+}
+.log-viewer::-webkit-scrollbar { width: 4px; }
+.log-viewer::-webkit-scrollbar-track { background: transparent; }
+.log-viewer::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+.log-line {
+  padding: 2px 12px;
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.02);
+  animation: log-slide-in .3s ease;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+@keyframes log-slide-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.log-line__ts {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  user-select: none;
+}
+.log-line__level {
+  flex-shrink: 0;
+  font-weight: 700;
+  width: 40px;
+  text-align: center;
+}
+.log-line__level.info  { color: var(--log-info); }
+.log-line__level.warn  { color: var(--log-warn); }
+.log-line__level.error { color: var(--log-error); }
+.log-line__msg {
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.log-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR — METRICS
+   ═══════════════════════════════════════════════════════════════ */
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.metric-row__label {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.metric-row__value {
+  font-family: var(--font-mono);
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.histogram-section {
+  margin-top: 12px;
+}
+.histogram-item {
+  padding: 10px 14px;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.histogram-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.histogram-item__label {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.histogram-item__stats {
+  display: flex;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+}
+.histogram-item__stat {
+  color: var(--text-muted);
+}
+.histogram-item__stat strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR — COMMENTS
+   ═══════════════════════════════════════════════════════════════ */
+.comment-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.comment-input textarea {
+  width: 100%;
+  min-height: 72px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+  font-size: .82rem;
+  color: var(--text);
+  resize: vertical;
+  transition: border-color var(--transition);
+  outline: none;
+}
+.comment-input textarea::placeholder { color: var(--text-dim); }
+.comment-input textarea:focus { border-color: var(--accent); }
+
+.comment-input__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.comment-input select {
+  flex: 1;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+.comment-input select:focus { border-color: var(--accent); }
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+.btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.btn--accent {
+  background: var(--accent);
+  color: #0f0d0a;
+  border-color: var(--accent);
+}
+.btn--accent:hover {
+  filter: brightness(1.1);
+}
+.btn--sm {
+  padding: 4px 10px;
+  font-size: .68rem;
+}
+.btn--danger {
+  border-color: var(--log-error);
+  color: var(--log-error);
+  background: rgba(232,93,74,.08);
+}
+.btn--danger:hover {
+  background: var(--log-error);
+  color: #fff;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-card {
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  animation: comment-in .35s ease;
+  position: relative;
+}
+@keyframes comment-in {
+  from { opacity: 0; transform: translateY(8px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.comment-card__text {
+  font-size: .82rem;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.45;
+}
+.comment-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.comment-card__tag {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+.comment-card__tag.injected {
+  background: rgba(110,200,122,.1);
+  color: var(--stage-done);
+  border-color: rgba(110,200,122,.2);
+}
+.comment-card__delete {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: .78rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all var(--transition);
+}
+.comment-card__delete:hover {
+  color: var(--log-error);
+  background: rgba(232,93,74,.08);
+}
+
+.no-comments {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 16px;
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REVEAL ANIMATION
+   ═══════════════════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════════════════════ */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.text-mono { font-family: var(--font-mono); }
+.text-dim { color: var(--text-dim); }
+.text-xs { font-size: .72rem; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .sidebar {
+    position: fixed;
+    right: -360px;
+    top: 64px;
+    bottom: 0;
+    z-index: 90;
+    transition: right .3s ease;
+    box-shadow: -4px 0 24px rgba(0,0,0,.2);
+  }
+  .sidebar.open { right: 0; }
+  .sidebar-toggle { display: block; }
+  .main-area { padding: 32px 24px 80px; }
+}
+@media (max-width: 768px) {
+  .header__inner { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 8px; }
+  .nav { display: none; }
+  .stats-pill { display: none; }
+  .main-area { padding: 24px 16px 64px; }
+}
+@media (max-width: 600px) {
+  .hero__task-name { font-size: 1.3rem; }
+  .hero__badges { gap: 8px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OVERLAY (mobile sidebar backdrop)
+   ═══════════════════════════════════════════════════════════════ */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 89;
+}
+.sidebar-overlay.visible {
+  display: block;
+}
+/* ═══════════════════════════════════════════════════════════════
+   QMEKA SPLASH
+   ═══════════════════════════════════════════════════════════════ */
+.qmeka-splash {
+  position: fixed; inset: 0; z-index: 99999;
+  background: #0b0907;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.qmeka-splash__glow {
+  position: absolute; width: 620px; height: 620px; border-radius: 50%;
+  background: var(--accent); filter: blur(110px); opacity: .32;
+  top: 50%; left: 50%; transform: translate(-50%,-55%);
+  will-change: transform, opacity;
+}
+.qmeka-splash__stage {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; perspective: 1000px;
+}
+.qmeka-splash__bulb { width: clamp(40px, 5vw, 64px); height: clamp(40px, 5vw, 64px); margin-bottom: 1.4rem; position: relative; }
+.qmeka-splash__bulb svg { width: 100%; height: 100%; overflow: visible; }
+.qmeka-splash__bulbglow {
+  position: absolute; inset: -40%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,168,48,.55), transparent 70%);
+  filter: blur(16px); opacity: 0; pointer-events: none;
+}
+.qmeka-splash__wordmark { display: flex; align-items: baseline; gap: .06em; font-family: var(--font-serif); font-weight: 600; line-height: .98; letter-spacing: -.03em; will-change: transform; }
+.qmeka-splash__name { display: inline-flex; font-size: clamp(3rem, 15vw, 9rem); color: #f5f0e8; }
+.qmeka-splash__name .clip { display: inline-block; transform-origin: 50% 100%; perspective: 500px; will-change: transform, opacity; }
+.qmeka-splash__name .l { display: inline-block; transform-origin: 50% 100%; will-change: transform, opacity; }
+.qmeka-splash__name .clip--q .l { color: var(--accent); }
+.qmeka-splash__status {
+  margin-top: 3rem; display: flex; align-items: baseline; gap: .55rem;
+  font-size: clamp(1rem, 2vw, 1.3rem); color: #a89e8c; height: 2rem;
+}
+.qmeka-splash__word { font-family: var(--font-serif); font-weight: 600; color: #f5f0e8; }
+.qmeka-splash__dots { display: flex; gap: .34rem; }
+.qmeka-splash__dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; will-change: transform, opacity; }
+.qmeka-splash__progress { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: rgba(240,168,48,.08); }
+.qmeka-splash__fill { height: 100%; width: 0%; background: linear-gradient(90deg, #c88520, var(--accent)); box-shadow: 0 0 14px rgba(240,168,48,.7); }
+
+</style>
+</head>
+<body>
+
+<!-- Qmeka splash overlay -->
+<div class="qmeka-splash" id="qmekaSplash">
+  <div class="qmeka-splash__glow"></div>
+  <div class="qmeka-splash__stage">
+    <div class="qmeka-splash__bulb">
+      <svg viewBox="0 0 64 64" fill="none">
+        <path d="M24 50h16M27 57h10" stroke="#f5f0e8" stroke-width="3" stroke-linecap="round"/>
+        <circle id="qmekaBulbGlass" cx="32" cy="28" r="17" stroke="#f5f0e8" stroke-width="3"/>
+        <path id="qmekaBulbFil" d="M25 28c0-4 3-7 7-7 4 0 7 3 7 7 0 3-2 6-4 7l-2 1h-4l-1-1c-2-1-3-4-3-7z" fill="#f0a830" opacity="0"/>
+      </svg>
+      <div class="qmeka-splash__bulbglow"></div>
+    </div>
+    <div class="qmeka-splash__wordmark">
+      <span class="qmeka-splash__name" id="qmekaSplashName">Qmeka</span>
+    </div>
+    <div class="qmeka-splash__status">
+      <span class="qmeka-splash__word">Qmeka.u</span>
+      <span class="qmeka-splash__dots"><i></i><i></i><i></i></span>
+    </div>
+  </div>
+  <div class="qmeka-splash__progress"><div class="qmeka-splash__fill" id="qmekaSplashFill"></div></div>
+</div>
+
+<!-- Mouse glow -->
+<div class="mouse-glow" id="mouseGlow"></div>
+
+<!-- Float dots -->
+<div class="float-dots" id="floatDots"></div>
+
+<!-- Progress bar -->
+<div class="progress-bar">
+  <div class="progress-bar__fill" id="progressFill"></div>
+</div>
+
+{% set active_nav = 'dashboard' %}
+{% set show_logs_toggle = true %}
+{% set show_stats_pill = true %}
+{% include "_header.html" %}
+{% include "_project_rail.html" %}
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Shell -->
+<div class="shell">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAIN AREA
+       ═══════════════════════════════════════════════════════════════ -->
+  <main class="main-area">
+
+    <section class="desk-launch reveal" id="deskLaunch">
+      <form id="launchForm">
+        <textarea name="task" placeholder="What shall we figure out today?" required></textarea>
+        <div class="desk-launch__bar">
+          <span class="desk-launch__pipe">pipeline: <a href="/pipeline" id="deskPipelineName">{{ pipeline_name or 'Default' }}</a></span>
+          <select name="n" aria-label="iterations">
+            <option value="1">1 iter</option>
+            <option value="2" selected>2 iters</option>
+            <option value="3">3 iters</option>
+            <option value="5">5 iters</option>
+          </select>
+          <button type="submit" class="desk-launch__go" id="btnStart">figure it out →</button>
+        </div>
+        <div class="desk-launch__hint">{% if target_hint %}{{ target_hint }}{% endif %} · graph is on pipeline · runs land in sessions</div>
+      </form>
+    </section>
+
+    <!-- Pipeline Status Hero -->
+    <section class="hero reveal" id="heroSection">
+      <div class="hero__task-name" id="heroTaskName">
+        <span id="typewriterText"></span><span class="cursor"></span>
+      </div>
+      <div class="hero__badges">
+        <span class="hero__badge hero__badge--iter" id="iterBadge">iter {{ iter or 0 }} / {{ total_iters or '?' }}</span>
+        <span class="hero__badge hero__badge--status {{ status or 'idle' }}" id="statusBadge">{{ status or 'idle' }}</span>
+        <span class="hero__elapsed" id="elapsed">{{ uptime or '0s' }}</span>
+        {% if verdict %}
+        <span class="hero__verdict" id="verdict">— {{ verdict }}</span>
+        {% endif %}
+      </div>
+      <div class="hero__progress">
+        <div class="hero__progress-fill {{ status }}" id="heroProgressFill" style="width:0%"></div>
+      </div>
+    </section>
+
+    <!-- Pipeline Editor (inline) -->
+    <section class="pipeline-flow reveal">
+      <div class="pipeline-flow__title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="display:flex;align-items:center;gap:16px;">
+          <span><span class="icon">◈</span> pipeline</span>
+          <span class="iter-wheel" data-tip="Scroll or ±">
+            <button class="iter-wheel__btn" id="iterMinus" type="button" aria-label="decrease iterations">−</button>
+            <span class="iter-wheel__dial" id="iterDial">
+              <svg class="iter-wheel__ring" viewBox="0 0 40 40">
+                <circle class="iter-wheel__track" cx="20" cy="20" r="17"/>
+                <circle class="iter-wheel__arc" id="iterArc" cx="20" cy="20" r="17"/>
+              </svg>
+              <span class="iter-wheel__num" id="iterNum">2</span>
+            </span>
+            <span class="iter-wheel__label">iters</span>
+            <button class="iter-wheel__btn" id="iterPlus" type="button" aria-label="increase iterations">+</button>
+          </span>
+        </span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn--sm" id="btnPipelineAuto" data-tip="Auto pipeline, no prompt">auto</button>
+          <button class="btn btn--sm" id="btnPipelineRegenerate" data-tip="Generate from a task">⚡ generate</button>
+          <button class="btn btn--sm" id="btnPipelineToggle" data-tip="Expand editor">edit ▾</button>
+        </div>
+      </div>
+
+      <!-- Compact view (always visible) -->
+      <div id="pipelineCompact" class="pipeline-compact">
+        <div class="pipeline-compact__stages" id="compactStages">
+          <span style="color:var(--text-dim);font-size:.8rem;">loading pipeline…</span>
+        </div>
+      </div>
+
+      <!-- Full editor (hidden by default) -->
+      <div id="pipelineEditor" class="pipeline-editor" style="display:none;">
+        <div class="pipeline-stages" id="pipelineStages"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn--sm" id="btnAddStage">+ add stage</button>
+          <button class="btn btn--sm btn--accent" id="btnSavePipeline" style="background:var(--accent);color:#0f0d0a;">save</button>
+          <button class="btn btn--sm" id="btnCancelEdit">cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Artifacts -->
+    <section class="artifacts reveal">
+      <div class="artifacts__title"><span class="icon">⊞</span> artifacts</div>
+      <div class="artifact-flow" id="artifactFlow">
+
+        {% if last_plan %}
+        <div class="artifact-item" data-artifact="plan">
+          <div class="code-window">
+            <div class="code-window__header">
+              <div class="code-window__dots">
+                <span class="code-window__dot"></span>
+                <span class="code-window__dot"></span>
+                <span class="code-window__dot"></span>
+              </div>
+              <span class="code-window__title">plan.md — {{ plan_size or '' }}</span>
+              <button class="copy-btn" data-target="planContent">copy</button>
+            </div>
+            <div class="code-window__body" id="planContent">{{ last_plan }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="artifact-item pending" data-artifact="plan">
+          <div class="artifact-pending">plan — pending…</div>
+        </div>
+        {% endif %}
+
+        {% if last_reply %}
+        <div class="artifact-item" data-artifact="reply">
+          <div class="code-window">
+            <div class="code-window__header">
+              <div class="code-window__dots">
+                <span class="code-window__dot"></span>
+                <span class="code-window__dot"></span>
+                <span class="code-window__dot"></span>
+              </div>
+              <span class="code-window__title">reply.md — {{ reply_size or '' }}</span>
+              <button class="copy-btn" data-target="replyContent">copy</button>
+            </div>
+            <div class="code-window__body" id="replyContent">{{ last_reply }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="artifact-item pending" data-artifact="reply">
+          <div class="artifact-pending">reply — pending…</div>
+        </div>
+        {% endif %}
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- CORRECTION INSTRUCTIONS — top of sidebar, most important -->
+    <div class="sidebar__section" style="border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius-sm);padding:12px;">
+      <div class="sidebar__title" style="margin-bottom:6px;"><span class="icon">⚡</span> corrections</div>
+      <div id="commentPlaceholder" style="font-size:12px;color:var(--text-dim);padding:12px 0;text-align:center;line-height:1.5;">
+        Run 2+ iterations to inject corrections between them.
+      </div>
+      <div id="commentInputWrap" class="comment-input" style="display:none;">
+        <textarea id="commentText" placeholder="e.g. &quot;Don't use JWT, use session cookies instead&quot;" style="min-height:80px;background:var(--bg);border-color:var(--accent);"></textarea>
+        <div class="comment-input__row">
+          <select id="commentTarget"></select>
+          <button class="btn btn--accent" id="sendComment" disabled style="background:var(--accent);color:#0f0d0a;font-weight:600;">send →</button>
+        </div>
+      </div>
+      <div class="comment-list" id="commentList">
+        <div class="no-comments">no corrections yet</div>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);">
+        <span id="commentCount">0 pending</span> · Ctrl+Enter to send
+      </div>
+    </div>
+
+    <!-- Live Log Stream -->
+    <div class="sidebar__section">
+      <div class="sidebar__title"><span class="icon">▸</span> live log</div>
+      <div class="log-viewer" id="logViewer">
+        {% for entry in parsed_logs %}
+        <div class="log-line">
+          <span class="log-line__ts">{{ entry.ts }}</span>
+          <span class="log-line__level {{ entry.level|lower }}">{{ entry.level }}</span>
+          <span class="log-line__msg">{{ entry.msg }}</span>
+        </div>
+        {% else %}
+        <div style="color:var(--text-dim);font-style:italic;font-size:12px;">log stream empty</div>
+        {% endfor %}
+      </div>
+      <button class="btn btn--sm" id="clearLogs" style="margin-top:10px;width:100%;">clear</button>
+    </div>
+
+    <!-- Metrics -->
+    <div class="sidebar__section">
+      <div class="sidebar__title"><span class="icon">◔</span> metrics</div>
+      <div class="metrics-list">
+        <div class="metric-row"><span class="metric-row__label">tokens</span><span class="metric-row__value" id="metricTokens">{{ counters.get('tokens', 0) }}</span></div>
+        <div class="metric-row"><span class="metric-row__label">cost</span><span class="metric-row__value" id="metricCost">${{ counters.get('cost', 0) }}</span></div>
+        <div class="metric-row"><span class="metric-row__label">time</span><span class="metric-row__value" id="metricTime">{{ counters.get('time', '0s') }}</span></div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+{% include "_setup_wizard.html" %}
+<script src="/static/qmeka-chrome.js"></script>
+<script>
+(function () {
+  var form = document.getElementById("launchForm");
+  if (!form) return;
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var btn = document.getElementById("btnStart");
+    btn.disabled = true;
+    btn.textContent = "Qmeka.u…";
+    fetch("/api/launch", { method: "POST", body: new FormData(form) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) window.location.reload();
+        else {
+          btn.disabled = false;
+          btn.textContent = "figure it out →";
+          alert("error: " + (data.error || "unknown"));
+        }
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = "figure it out →";
+      });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === "Z" || e.key === "z")) {
+      e.preventDefault();
+      form.dispatchEvent(new Event("submit", { cancelable: true }));
+    }
+  });
+})();
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   QMEKA SPLASH — GSAP entrance + auto-exit
+   ═══════════════════════════════════════════════════════════════ */
+(function() {
+  var splash = document.getElementById('qmekaSplash');
+  if (!splash) return;
+  // show the splash only on the first load of this tab session
+  if (sessionStorage.getItem('qmeka_seen')) { splash.remove(); return; }
+  sessionStorage.setItem('qmeka_seen', '1');
+  if (typeof gsap === 'undefined') { splash.remove(); return; }
+
+  var nameEl = document.getElementById('qmekaSplashName');
+  nameEl.innerHTML = 'Qmeka'.split('').map(function(ch, i) {
+    return '<span class="clip ' + (i === 0 ? 'clip--q' : '') + '"><span class="l">' + ch + '</span></span>';
+  }).join('');
+
+  var rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var D = rm ? 0.01 : 1;
+
+  // scatter: letters start scattered in chaos (random pos/rot/blur)
+  nameEl.querySelectorAll('.clip').forEach(function(l) {
+    gsap.set(l, {
+      x: gsap.utils.random(-460, 460),
+      y: gsap.utils.random(-320, 320),
+      rotation: gsap.utils.random(-180, 180),
+      scale: gsap.utils.random(0.25, 1.7),
+      autoAlpha: 0,
+      filter: 'blur(14px)',
+    });
+  });
+
+  var tl = gsap.timeline({
+    defaults: { ease: 'power4.out' },
+    onComplete: function() {
+      gsap.to(splash, { autoAlpha: 0, scale: 1.03, duration: .55, ease: 'power2.in',
+        onComplete: function() { splash.remove(); } });
+    }
+  });
+
+  tl.from('.qmeka-splash__glow', { scale: .3, autoAlpha: 0, duration: 2.2 * D, ease: 'expo.out' }, 0)
+    // letters fly in from chaos and assemble into "Qmeka"
+    .to('.qmeka-splash__name .clip', {
+      x: 0, y: 0, rotation: 0, scale: 1, autoAlpha: 1, filter: 'blur(0px)',
+      duration: 1.25 * D, stagger: 0.09 * D, ease: 'back.out(1.7)',
+    }, .5 * D)
+    // the Q lands with a warm flash
+    .fromTo('.qmeka-splash__name .clip--q .l', { color: '#7a5a1e' }, { color: '#f0a830', duration: .5 * D }, 1.1 * D)
+    // elastic settle of the whole word
+    .from('.qmeka-splash__name', { scale: 1.28, duration: .9 * D, ease: 'elastic.out(1, 0.3)' }, 1.5 * D)
+    // the idea: bulb pops in and lights up
+    .from('.qmeka-splash__bulb', { scale: 0, rotation: -30, autoAlpha: 0, duration: .55 * D, ease: 'back.out(2.4)' }, 2.0 * D)
+    .to('#qmekaBulbFil', { opacity: 1, duration: .3 * D }, 2.35 * D)
+    .fromTo('#qmekaBulbGlass', { stroke: '#f5f0e8' }, { stroke: '#f0a830', duration: .3 * D }, 2.35 * D)
+    .fromTo('.qmeka-splash__bulbglow', { opacity: 0, scale: .4 }, { opacity: 1, scale: 1.1, duration: .6 * D }, 2.4 * D)
+    .from('.qmeka-splash__status', { autoAlpha: 0, y: 14, duration: .6 * D }, 2.7 * D)
+    .to('#qmekaSplashFill', { width: '100%', duration: 5.5 * D, ease: 'power1.inOut' }, .4 * D);
+
+  if (!rm) {
+    gsap.to('.qmeka-splash__glow', { scale: 1.16, opacity: .42, duration: 4.5, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.to('.qmeka-splash__dots i', { y: -5, opacity: 1, duration: .5, stagger: .15, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.to('.qmeka-splash__bulbglow', { opacity: .55, scale: 1.25, duration: 1.6, repeat: -1, yoyo: true, ease: 'sine.inOut' }, 3.0);
+    gsap.to('.qmeka-splash__name', { y: -8, duration: 3, repeat: -1, yoyo: true, ease: 'sine.inOut' }, 2.2);
+  }
+
+  // safety net: always clear the splash, even if rAF is throttled
+  setTimeout(function() {
+    if (splash && document.body.contains(splash)) splash.remove();
+  }, 8000);
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   JS — SELF-CONTAINED
+   ═══════════════════════════════════════════════════════════════ */
+
+(function() {
+  'use strict';
+
+  /* ── Escape HTML ── */
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  /* ── Mouse Glow ── */
+  var glow = document.getElementById('mouseGlow');
+  var glowTimeout;
+  document.addEventListener('mousemove', function(e) {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+    glow.classList.add('active');
+    clearTimeout(glowTimeout);
+    glowTimeout = setTimeout(function() { glow.classList.remove('active'); }, 1500);
+  });
+
+  /* ── Float Dots ── */
+  var dotsContainer = document.getElementById('floatDots');
+  for (var i = 0; i < 20; i++) {
+    var dot = document.createElement('div');
+    dot.className = 'float-dot';
+    dot.style.left = Math.random() * 100 + '%';
+    dot.style.animationDuration = (8 + Math.random() * 12) + 's';
+    dot.style.animationDelay = (Math.random() * 10) + 's';
+    dot.style.width = dot.style.height = (2 + Math.random() * 3) + 'px';
+    dotsContainer.appendChild(dot);
+  }
+
+  /* ── Reveal on scroll ── */
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+
+  /* ── Typewriter ── */
+  var phrases = [
+    'what shall we figure out today?',
+    'agents standing by…',
+    'reviewers online…',
+    'connecting the dots…',
+    'consulting the hive mind…',
+    'po.qmeka — покумекать',
+  ];
+  var twEl = document.getElementById('typewriterText');
+  var phraseIdx = 0, charIdx = 0, deleting = false, twTimer;
+
+  function typewrite() {
+    var current = phrases[phraseIdx];
+    if (!deleting) {
+      twEl.textContent = current.slice(0, charIdx + 1);
+      charIdx++;
+      if (charIdx === current.length) {
+        setTimeout(function() { deleting = true; typewrite(); }, 2200);
+        return;
+      }
+      twTimer = setTimeout(typewrite, 60 + Math.random() * 40);
+    } else {
+      twEl.textContent = current.slice(0, charIdx - 1);
+      charIdx--;
+      if (charIdx === 0) {
+        deleting = false;
+        phraseIdx = (phraseIdx + 1) % phrases.length;
+        twTimer = setTimeout(typewrite, 400);
+        return;
+      }
+      twTimer = setTimeout(typewrite, 30);
+    }
+  }
+  typewrite();
+
+  /* ── Progress bar ── */
+  var progressFill = document.getElementById('progressFill');
+  var heroProgressFill = document.getElementById('heroProgressFill');
+  function updateProgress() {
+    var badgeEl = document.getElementById('iterBadge');
+    var text = badgeEl ? badgeEl.textContent : '';
+    var iterMatch = text.match(/\d+/);
+    var totalMatch = text.match(/\d+$/);
+    var iter = iterMatch ? parseInt(iterMatch[0]) : 0;
+    var total = totalMatch ? parseInt(totalMatch[0]) : 1;
+    var pct = total > 0 ? Math.min(100, (iter / total) * 100) : 0;
+    if (progressFill) progressFill.style.width = pct + '%';
+    if (heroProgressFill) heroProgressFill.style.width = pct + '%';
+  }
+  updateProgress();
+
+  /* ── Format metrics ── */
+  function formatTokens(v) {
+    var n = parseFloat(v);
+    if (isNaN(n)) return v;
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+  }
+
+  function formatCost(v) {
+    var n = parseFloat(v);
+    if (isNaN(n)) return v;
+    return '$' + n.toFixed(2);
+  }
+
+  function formatTime(v) {
+    if (typeof v === 'string' && (v.indexOf('m') > -1 || v.indexOf('h') > -1 || v.indexOf('s') > -1)) return v;
+    var secs = parseInt(v);
+    if (isNaN(secs)) return v;
+    if (secs < 60) return secs + 's';
+    if (secs < 3600) return Math.floor(secs / 60) + 'm ' + (secs % 60) + 's';
+    var h = Math.floor(secs / 3600);
+    var m = Math.floor((secs % 3600) / 60);
+    return h + 'h ' + m + 'm';
+  }
+
+  function formatBigNumber(v) {
+    var n = parseFloat(v);
+    if (isNaN(n)) return String(v);
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toFixed(0);
+  }
+
+  /* ── SSE Stream ── */
+  var logViewer = document.getElementById('logViewer');
+  var connectionDot = document.getElementById('connectionDot');
+  var connectionLabel = document.getElementById('connectionLabel');
+  var eventSource;
+
+  function connectSSE() {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource('/api/stream');
+
+    eventSource.onopen = function() {
+      connectionDot.classList.remove('disconnected');
+      connectionLabel.textContent = 'connected';
+    };
+
+    eventSource.onerror = function() {
+      connectionDot.classList.add('disconnected');
+      connectionLabel.textContent = 'disconnected';
+      setTimeout(connectSSE, 3000);
+    };
+
+    eventSource.addEventListener('log', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        appendLog(d.ts, d.level, d.msg);
+      } catch(err) {}
+    });
+
+    eventSource.addEventListener('stage', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        updateStage(d.stage, d.status);
+      } catch(err) {}
+    });
+
+    eventSource.addEventListener('status', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        if (d.iter !== undefined) {
+          var iterBadge = document.getElementById('iterBadge');
+          iterBadge.textContent = 'iter ' + d.iter + ' / ' + (d.total || '?');
+        }
+        if (d.status) {
+          var badge = document.getElementById('statusBadge');
+          badge.textContent = d.status;
+          badge.className = 'hero__badge hero__badge--status ' + d.status;
+          heroProgressFill.className = 'hero__progress-fill ' + d.status;
+        }
+        if (d.verdict) {
+          var el = document.getElementById('verdict');
+          if (el) el.textContent = '— ' + d.verdict;
+          else {
+            var v = document.createElement('span');
+            v.className = 'hero__verdict';
+            v.id = 'verdict';
+            v.textContent = '— ' + d.verdict;
+            document.querySelector('.hero__badges').appendChild(v);
+          }
+        }
+        if (d.elapsed) document.getElementById('elapsed').textContent = d.elapsed;
+        if (d.counters) {
+          if (d.counters.tokens !== undefined) document.getElementById('metricTokens').textContent = formatTokens(d.counters.tokens);
+          if (d.counters.cost !== undefined) document.getElementById('metricCost').textContent = formatCost(d.counters.cost);
+          if (d.counters.time !== undefined) document.getElementById('metricTime').textContent = formatTime(d.counters.time);
+        }
+        updateProgress();
+      } catch(err) {}
+    });
+
+    eventSource.addEventListener('comment_added', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        addCommentToDOM(d);
+      } catch(err) {}
+    });
+
+    eventSource.addEventListener('iter_done', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        var iterNum = parseInt(d.i || d.iter || 0);
+        if (iterNum > 0 && window._onIterationComplete) {
+          window._onIterationComplete(iterNum);
+        }
+      } catch(err) {}
+    });
+
+    eventSource.addEventListener('iter_start', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        var iterNum = parseInt(d.i || d.iter || 0);
+        // iter_start with i=N means previous iteration (N-1) is done
+        if (iterNum > 1 && window._onIterationComplete) {
+          window._onIterationComplete(iterNum - 1);
+        }
+      } catch(err) {}
+    });
+  }
+
+  function appendLog(ts, level, msg) {
+    var line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML =
+      '<span class="log-line__ts">' + escapeHtml(ts || '--:--:--') + '</span>' +
+      '<span class="log-line__level ' + escapeHtml((level || 'info').toLowerCase()) + '">' +
+        escapeHtml(level || 'INFO') + '</span>' +
+      '<span class="log-line__msg">' + escapeHtml(msg || '') + '</span>';
+    logViewer.appendChild(line);
+    logViewer.scrollTop = logViewer.scrollHeight;
+  }
+
+  function updateStage(name, status) {
+    // Update compact view chips
+    var chips = document.querySelectorAll('.compact-chip');
+    chips.forEach(function(chip) {
+      if (chip.querySelector('.compact-chip__label').textContent === name) {
+        chip.className = 'compact-chip ' + status;
+      }
+    });
+  }
+
+  connectSSE();
+
+  /* ── Sidebar toggle ── */
+  var sidebar = document.getElementById('sidebar');
+  var sidebarToggle = document.getElementById('sidebarToggle');
+  var sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  function toggleSidebar() {
+    sidebar.classList.toggle('open');
+    sidebarOverlay.classList.toggle('visible');
+  }
+  sidebarToggle.addEventListener('click', toggleSidebar);
+  sidebarOverlay.addEventListener('click', toggleSidebar);
+
+  /* ── Compact chip click → scroll to artifact ── */
+  document.querySelectorAll('.compact-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var name = chip.querySelector('.compact-chip__label').textContent;
+      var artifact = document.querySelector('.artifact-item[data-artifact="' + name + '"]');
+      if (artifact) {
+        artifact.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        artifact.style.outline = '2px solid var(--accent)';
+        setTimeout(function() { artifact.style.outline = ''; }, 2000);
+      }
+    });
+  });
+
+  /* ── Clear logs ── */
+  document.getElementById('clearLogs').addEventListener('click', function() {
+    logViewer.innerHTML = '';
+  });
+
+  /* ── Copy buttons ── */
+  document.querySelectorAll('.copy-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target = document.getElementById(btn.dataset.target);
+      if (!target) return;
+      navigator.clipboard.writeText(target.textContent).then(function() {
+        btn.textContent = 'copied!';
+        btn.classList.add('copied');
+        setTimeout(function() { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+      });
+    });
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     COMMENTS — reactive to iteration count
+     ═══════════════════════════════════════════════════════════════ */
+  var commentText = document.getElementById('commentText');
+  var commentTarget = document.getElementById('commentTarget');
+  var sendBtn = document.getElementById('sendComment');
+  var commentList = document.getElementById('commentList');
+  var commentCount = document.getElementById('commentCount');
+  var commentPlaceholder = document.getElementById('commentPlaceholder');
+  var commentInputWrap = document.getElementById('commentInputWrap');
+  var comments = [];
+  var currentIteration = {{ current_iter or 0 }};  // 0 = not started, 1 = iter1 done, etc.
+
+  function updateCommentDropdown() {
+    // Logic:
+    // iter 0 (not started) or iter 1 (only 1 done): show placeholder, no input
+    // iter 2: only "next iteration" (iter 3)
+    // iter 3: "next iteration" (iter 4) + "iter 2" (past, can reference)
+    // iter N: "next iteration" (N+1) + "iter 2..N-1" (past iterations as reference points)
+    if (currentIteration < 2) {
+      commentPlaceholder.style.display = 'block';
+      commentInputWrap.style.display = 'none';
+      return;
+    }
+    commentPlaceholder.style.display = 'none';
+    commentInputWrap.style.display = 'block';
+
+    var opts = '<option value="next">next iteration (' + (currentIteration + 1) + ')</option>';
+    // Past iterations available for injection (2 through current)
+    for (var i = 2; i <= currentIteration; i++) {
+      opts += '<option value="' + i + '">iter ' + i + ' (done)</option>';
+    }
+    commentTarget.innerHTML = opts;
+  }
+
+  // Listen for iteration updates via SSE
+  function onIterationComplete(iterNum) {
+    currentIteration = iterNum;
+    updateCommentDropdown();
+  }
+
+  // Expose for SSE handler
+  window._onIterationComplete = onIterationComplete;
+
+  updateCommentDropdown();  // init
+
+  commentText.addEventListener('input', function() {
+    sendBtn.disabled = !commentText.value.trim();
+  });
+
+  sendBtn.addEventListener('click', sendComment);
+  commentText.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment();
+  });
+
+  function sendComment() {
+    var text = commentText.value.trim();
+    if (!text) return;
+    var targetIter = commentTarget.value;
+
+    fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, session: '{{ session_name }}', target_iter: targetIter })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(c) {
+      addCommentToDOM(c);
+      commentText.value = '';
+      sendBtn.disabled = true;
+    })
+    .catch(function(err) { console.error('comment failed:', err); });
+  }
+
+  function addCommentToDOM(c) {
+    var placeholder = commentList.querySelector('.no-comments');
+    if (placeholder) placeholder.remove();
+
+    comments.push(c);
+    updateCommentCount();
+
+    var card = document.createElement('div');
+    card.className = 'comment-card';
+    card.dataset.id = c.id || '';
+
+    var injected = c.injected ? 'injected' : '';
+    var injectedLabel = c.injected ? 'injected' : 'pending';
+
+    card.innerHTML =
+      '<div class="comment-card__text">' + escapeHtml(c.text) + '</div>' +
+      '<div class="comment-card__meta">' +
+        '<span class="comment-card__tag ' + injected + '">iter ' + escapeHtml(String(c.target_iter || 'next')) + ' · ' + injectedLabel + '</span>' +
+        '<button class="comment-card__delete" data-tip="Delete">✕</button>' +
+      '</div>';
+
+    card.querySelector('.comment-card__delete').addEventListener('click', function() {
+      if (!c.id) return;
+      fetch('/api/comments/' + c.id, { method: 'DELETE' })
+        .then(function() {
+          card.remove();
+          comments = comments.filter(function(x) { return x.id !== c.id; });
+          updateCommentCount();
+          if (comments.length === 0) {
+            commentList.innerHTML = '<div class="no-comments">no comments yet</div>';
+          }
+        })
+        .catch(function(err) { console.error('delete failed:', err); });
+    });
+
+    commentList.prepend(card);
+  }
+
+  function updateCommentCount() {
+    var pending = comments.filter(function(c) { return !c.injected; }).length;
+    commentCount.textContent = pending + ' pending';
+  }
+
+  /* ── Load existing comments ── */
+  fetch('/api/comments?session={{ session_name }}')
+    .then(function(r) { return r.json(); })
+    .then(function(list) {
+      if (Array.isArray(list)) {
+        list.forEach(function(c) { addCommentToDOM(c); });
+      }
+    })
+    .catch(function() {});
+
+  /* ═══════════════════════════════════════════════════════════════
+     INLINE PIPELINE EDITOR
+     ═══════════════════════════════════════════════════════════════ */
+  var pipelineData = null;
+  var editorOpen = false;
+  var ROLES = {{ roles | tojson }};  // array of strings
+  var STAGE_STATES = ['pending','active','done','error'];
+  var ITER_MIN = 1;
+  var ITER_MAX = 8;
+  var ITER_CIRC = 2 * Math.PI * 17;
+  var iterSaveTimer = null;
+  var pendingIters = null;
+
+  function getIters() {
+    var n = pipelineData && parseInt(pipelineData.iterations, 10);
+    if (pendingIters != null) n = pendingIters;
+    if (!n || n < ITER_MIN) n = 2;
+    if (n > ITER_MAX) n = ITER_MAX;
+    return n;
+  }
+
+  function renderIterWheel(n) {
+    var num = document.getElementById('iterNum');
+    var arc = document.getElementById('iterArc');
+    var minus = document.getElementById('iterMinus');
+    var plus = document.getElementById('iterPlus');
+    if (num) num.textContent = String(n);
+    if (arc) {
+      arc.style.strokeDasharray = String(ITER_CIRC);
+      arc.style.strokeDashoffset = String(ITER_CIRC * (1 - n / ITER_MAX));
+    }
+    if (minus) minus.disabled = n <= ITER_MIN;
+    if (plus) plus.disabled = n >= ITER_MAX;
+    var badge = document.getElementById('iterBadge');
+    if (badge) {
+      var cur = badge.textContent.match(/^iter\s+(\S+)/);
+      var curN = cur ? cur[1] : '0';
+      badge.textContent = 'iter ' + curN + ' / ' + n;
+    }
+  }
+
+  function scheduleIterSave() {
+    clearTimeout(iterSaveTimer);
+    iterSaveTimer = setTimeout(function() {
+      if (!pipelineData) return;
+      fetch('/api/pipeline', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(pipelineData)
+      });
+    }, 280);
+  }
+
+  function setIters(n, persist) {
+    n = Math.max(ITER_MIN, Math.min(ITER_MAX, n | 0));
+    pendingIters = n;
+    if (!pipelineData) pipelineData = { stages: [] };
+    pipelineData.iterations = n;
+    renderIterWheel(n);
+    if (persist !== false) scheduleIterSave();
+  }
+
+  function bindIterWheel() {
+    var minus = document.getElementById('iterMinus');
+    var plus = document.getElementById('iterPlus');
+    var dial = document.getElementById('iterDial');
+    if (minus) minus.onclick = function() { setIters(getIters() - 1); };
+    if (plus) plus.onclick = function() { setIters(getIters() + 1); };
+    if (dial) {
+      dial.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        setIters(getIters() + (e.deltaY < 0 ? 1 : -1));
+      }, { passive: false });
+    }
+  }
+
+  function loadPipelineConfig() {
+    fetch('/api/pipeline')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        // API returns raw pipeline JSON: { name, stages: [...], services: {...} }
+        pipelineData = (d && Array.isArray(d.stages)) ? d : { stages: [] };
+        if (pendingIters != null) pipelineData.iterations = pendingIters;
+        else if (!pipelineData.iterations) pipelineData.iterations = 2;
+        renderCompactView(pipelineData);
+        renderIterWheel(getIters());
+      })
+      .catch(function() {
+        pipelineData = { stages: [] };
+        pipelineData.iterations = pendingIters != null ? pendingIters : 2;
+        renderCompactView(pipelineData);
+        renderIterWheel(getIters());
+      });
+  }
+
+  // schema helpers: pipeline.json uses id/type/service, editor uses these consistently
+  function stageName(st) { return st.id || st.name || 'stage'; }
+  function stageAgent(st) {
+    if (st.type === 'reviewer' && st.service) return st.service;
+    if (st.service) return st.service;
+    if (st.agent) return st.agent;
+    return 'opencode';
+  }
+  function isLocalAgent(st) { return stageAgent(st) === 'opencode'; }
+
+  function renderCompactView(cfg) {
+    var el = document.getElementById('compactStages');
+    if (!el) return;
+    if (!cfg || !Array.isArray(cfg.stages) || cfg.stages.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-dim);font-size:.8rem;">no stages — click <b>edit</b> to build, or <b>⚡ generate</b> from a task</span>';
+      return;
+    }
+    var html = '';
+    cfg.stages.forEach(function(st, i) {
+      var state = st.state || 'pending';
+      var icon = isLocalAgent(st) ? '⚙' : '🌐';
+      var agent = stageAgent(st);
+      var agentLabel = !isLocalAgent(st) ? '<span class="compact-chip__agent">' + escapeHtml(agent) + '</span>' : '';
+      html += '<div class="compact-chip ' + state + '">';
+      html += '<span class="compact-chip__icon">' + icon + '</span>';
+      html += '<span class="compact-chip__label">' + escapeHtml(stageName(st)) + '</span>';
+      html += agentLabel;
+      html += '</div>';
+      if (i < cfg.stages.length - 1) html += '<span class="compact-arrow">→</span>';
+    });
+    el.innerHTML = html;
+  }
+
+  function renderEditor(cfg) {
+    var el = document.getElementById('pipelineStages');
+    if (!el) return;
+    var stages = (cfg && Array.isArray(cfg.stages)) ? cfg.stages : [];
+    var html = '';
+    stages.forEach(function(st, i) {
+      var agent = stageAgent(st);
+      html += '<div class="pipeline-stage-row" draggable="true" data-idx="' + i + '">';
+      html += '<span class="pipeline-stage-grip" data-tip="Drag to reorder">⠿</span>';
+      html += '<span class="pipeline-stage-num">' + (i + 1) + '.</span>';
+      html += '<span class="pipeline-stage-name"><input value="' + escapeHtml(stageName(st)) + '" data-field="name" data-idx="' + i + '"></span>';
+      html += '<span class="pipeline-stage-role"><select data-field="role" data-idx="' + i + '">';
+      html += '<option value="">—</option>';
+      ROLES.forEach(function(r) {
+        var sel = (st.role || '') === r ? ' selected' : '';
+        html += '<option value="' + escapeHtml(r) + '"' + sel + '>' + escapeHtml(r) + '</option>';
+      });
+      html += '</select></span>';
+      html += '<span class="pipeline-stage-agent"><select data-field="agent" data-idx="' + i + '">';
+      ['opencode','zai','deepseek','qwen','google'].forEach(function(a) {
+        var sel = agent === a ? ' selected' : '';
+        var label = a === 'zai' ? 'z.ai' : a;
+        html += '<option value="' + a + '"' + sel + '>' + label + '</option>';
+      });
+      html += '</select></span>';
+      html += '<button class="pipeline-stage-del" data-del="' + i + '" data-tip="Remove">✕</button>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+    bindStageEvents();
+  }
+
+  function bindStageEvents() {
+    document.querySelectorAll('.pipeline-stage-del').forEach(function(btn) {
+      btn.onclick = function() {
+        var idx = parseInt(btn.dataset.del);
+        pipelineData.stages.splice(idx, 1);
+        renderEditor(pipelineData);
+        renderCompactView(pipelineData);
+      };
+    });
+    document.querySelectorAll('#pipelineStages input, #pipelineStages select').forEach(function(el) {
+      el.onchange = function() {
+        var idx = parseInt(el.dataset.idx);
+        var field = el.dataset.field;
+        var st = pipelineData.stages[idx];
+        if (!st) return;
+        if (field === 'name') {
+          st.id = el.value;
+        } else if (field === 'role') {
+          st.role = el.value;
+        } else if (field === 'agent') {
+          if (el.value === 'opencode') {
+            st.type = 'opencode';
+            delete st.service;
+          } else {
+            st.type = 'reviewer';
+            st.service = el.value;
+          }
+        }
+        renderCompactView(pipelineData);
+      };
+    });
+    // Drag & drop reorder
+    var rows = document.querySelectorAll('.pipeline-stage-row');
+    rows.forEach(function(row) {
+      row.ondragstart = function(e) { e.dataTransfer.setData('text/plain', row.dataset.idx); row.classList.add('dragging'); };
+      row.ondragend = function() { row.classList.remove('dragging'); };
+      row.ondragover = function(e) { e.preventDefault(); row.classList.add('drag-over'); };
+      row.ondragleave = function() { row.classList.remove('drag-over'); };
+      row.ondrop = function(e) {
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        var from = parseInt(e.dataTransfer.getData('text/plain'));
+        var to = parseInt(row.dataset.idx);
+        if (from !== to) {
+          var item = pipelineData.stages.splice(from, 1)[0];
+          pipelineData.stages.splice(to, 0, item);
+          renderEditor(pipelineData);
+          renderCompactView(pipelineData);
+        }
+      };
+    });
+  }
+
+  // Toggle editor
+  document.getElementById('btnPipelineToggle').onclick = function() {
+    editorOpen = !editorOpen;
+    document.getElementById('pipelineEditor').style.display = editorOpen ? 'block' : 'none';
+    document.getElementById('btnPipelineToggle').textContent = editorOpen ? 'collapse ▴' : 'edit ▾';
+    if (editorOpen) {
+      if (!pipelineData) loadPipelineConfig();
+      renderEditor(pipelineData || {stages:[]});
+    }
+  };
+
+  // Add stage
+  document.getElementById('btnAddStage').onclick = function() {
+    if (!pipelineData) pipelineData = {stages:[]};
+    pipelineData.stages.push({id:'new_stage', type:'opencode', role:'', state:'pending'});
+    renderEditor(pipelineData);
+    renderCompactView(pipelineData);
+  };
+
+  // Save
+  document.getElementById('btnSavePipeline').onclick = function() {
+    fetch('/api/pipeline', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(pipelineData)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        editorOpen = false;
+        document.getElementById('pipelineEditor').style.display = 'none';
+        document.getElementById('btnPipelineToggle').textContent = 'edit ▾';
+        renderCompactView(pipelineData);
+      }
+    });
+  };
+
+  // Cancel
+  document.getElementById('btnCancelEdit').onclick = function() {
+    editorOpen = false;
+    document.getElementById('pipelineEditor').style.display = 'none';
+    document.getElementById('btnPipelineToggle').textContent = 'edit ▾';
+    loadPipelineConfig();
+  };
+
+  // Auto-configure: use the current session task if present, else default preset
+  var CURRENT_TASK = {{ current_task | tojson }};
+  var DEFAULT_PIPELINE = {
+    name: 'default-2-reviewers',
+    iterations: 2,
+    stages: [
+      { id: 'spec', type: 'opencode', role: 'spec', inputs: ['task'], outputs: ['spec.md'], artifact_dir: 'spec' },
+      { id: 'plan', type: 'opencode', role: 'plan', inputs: ['spec.md'], outputs: ['plan.md'], artifact_dir: 'spec' },
+      { id: 'zai_grill', type: 'reviewer', service: 'zai', role: 'grill', inputs: ['plan.md'], outputs: ['review_zai.md'], artifact_dir: 'reviews', parallel_group: 'review1' },
+      { id: 'deepseek_meta', type: 'reviewer', service: 'deepseek', role: 'meta-review', inputs: ['plan.md'], outputs: ['review_ds_meta.md'], artifact_dir: 'reviews', parallel_group: 'review1' },
+      { id: 'analyze', type: 'opencode', role: 'analyze', inputs: ['plan.md', 'review_zai.md', 'review_ds_meta.md'], outputs: ['analysis.md'], artifact_dir: 'analysis' }
+    ],
+    services: {}
+  };
+
+  function finishPipeline(btn, text) {
+    btn.textContent = text;
+    btn.disabled = false;
+    if (pipelineData && pendingIters != null && !pipelineData.iterations) {
+      pipelineData.iterations = pendingIters;
+    }
+    if (pipelineData && !pipelineData.iterations) pipelineData.iterations = 2;
+    renderCompactView(pipelineData);
+    renderIterWheel(getIters());
+    if (editorOpen) renderEditor(pipelineData);
+  }
+
+  document.getElementById('btnPipelineAuto').onclick = function() {
+    var btn = document.getElementById('btnPipelineAuto');
+    if (CURRENT_TASK) {
+      // auto-generate an optimal pipeline for the current task (no prompt)
+      btn.textContent = '⏳ Qmeka.u…';
+      btn.disabled = true;
+      fetch('/api/generate-pipeline', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({task: CURRENT_TASK})
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok) {
+          var keep = getIters();
+          pipelineData = d.pipeline || {};
+          if (!pipelineData.iterations) pipelineData.iterations = keep;
+          finishPipeline(btn, 'auto ✓');
+        }
+        else { btn.textContent = 'auto'; btn.disabled = false; alert('Auto failed: ' + (d.error || 'unknown')); }
+      })
+      .catch(function(e) { btn.textContent = 'auto'; btn.disabled = false; alert('Error: ' + e.message); });
+    } else {
+      // no task yet — apply the recommended default
+      pipelineData = DEFAULT_PIPELINE;
+      fetch('/api/pipeline', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(pipelineData)
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) finishPipeline(btn, 'auto ✓');
+      });
+    }
+  };
+
+  // Generate pipeline
+  document.getElementById('btnPipelineRegenerate').onclick = function() {
+    var task = prompt('Task for pipeline generation:');
+    if (!task) return;
+    var btn = document.getElementById('btnPipelineRegenerate');
+    btn.textContent = '⏳ Qmeka.u…';
+    btn.disabled = true;
+    fetch('/api/generate-pipeline', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({task: task})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var keep = getIters();
+        pipelineData = d.pipeline || {};
+        if (!pipelineData.iterations) pipelineData.iterations = keep;
+        finishPipeline(btn, '⚡ generate');
+      }
+      else { btn.textContent = '⚡ generate'; btn.disabled = false; alert('Generation failed: ' + (d.error || 'unknown')); }
+    })
+    .catch(function(e) {
+      btn.textContent = '⚡ generate';
+      btn.disabled = false;
+      alert('Error: ' + e.message);
+    });
+  };
+
+  // Init
+  bindIterWheel();
+  loadPipelineConfig();
+
+})();
+</script>
+</body>
+</html>
+

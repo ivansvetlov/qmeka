@@ -1,0 +1,101 @@
+{
+  "name": "full-pipeline",
+  "description": "Full pipeline with spec + grill + meta-review",
+  "iterations": 2,
+  "stages": [
+    {
+      "id": "spec",
+      "type": "opencode",
+      "role": "spec",
+      "prompt": "Создай спецификацию (ТЗ) для задачи.",
+      "inputs": [
+        "task"
+      ],
+      "outputs": [
+        "spec.md"
+      ],
+      "artifact_dir": "spec"
+    },
+    {
+      "id": "plan",
+      "type": "opencode",
+      "role": "plan",
+      "prompt": "На основе спецификации напиши план.",
+      "inputs": [
+        "spec.md"
+      ],
+      "outputs": [
+        "plan.md"
+      ],
+      "artifact_dir": "spec"
+    },
+    {
+      "id": "zai_grill",
+      "type": "reviewer",
+      "service": "zai",
+      "role": "grill",
+      "prompt": "Проведи допрос плана.",
+      "inputs": [
+        "plan.md"
+      ],
+      "outputs": [
+        "review_zai.md"
+      ],
+      "artifact_dir": "reviews",
+      "parallel_group": "r1"
+    },
+    {
+      "id": "ds_meta",
+      "type": "reviewer",
+      "service": "deepseek",
+      "role": "meta-review",
+      "prompt": "Оцени качество ревью z.ai.",
+      "inputs": [
+        "plan.md",
+        "review_zai.md"
+      ],
+      "outputs": [
+        "review_ds.md"
+      ],
+      "artifact_dir": "reviews",
+      "parallel_group": "r1"
+    },
+    {
+      "id": "analyze",
+      "type": "opencode",
+      "role": "analyze",
+      "prompt": "Проанализируй все замечания.",
+      "inputs": [
+        "plan.md",
+        "review_zai.md",
+        "review_ds.md"
+      ],
+      "outputs": [
+        "analysis.md"
+      ],
+      "artifact_dir": "analysis"
+    },
+    {
+      "id": "finalize",
+      "type": "opencode",
+      "role": "plan",
+      "prompt": "Собери финальный план с учётом анализа.",
+      "inputs": [
+        "plan.md",
+        "analysis.md"
+      ],
+      "outputs": [
+        "plan_final.md"
+      ],
+      "artifact_dir": "analysis"
+    }
+  ],
+  "services": {
+    "zai": {
+      "url": "https://z.ai"
+    },
+    "deepseek": {
+      "url": "https://chat.deepseek.com"
+    }
+  }
+}

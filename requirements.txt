@@ -1,0 +1,7 @@
+# Собрано по импортам восстановленного кода, не проверялось запуском.
+fastapi>=0.110
+uvicorn[standard]>=0.27
+jinja2>=3.1
+python-multipart>=0.0.9
+playwright>=1.40
+python-docx>=1.1

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>/Qmeka — sessions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/qmeka-chrome.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:14px; min-height:100vh; }
+
+/* Main */
+.main { max-width:1100px; margin:0 auto; padding:32px 24px; }
+
+/* Session count */
+.section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.section-title { font-family:var(--font-serif); font-size:22px; font-weight:700; }
+.section-count { font-size:13px; color:var(--text-dim); font-family:var(--font-mono); }
+
+/* Table */
+.table-wrap { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:var(--bg-surface); }
+table { width:100%; border-collapse:collapse; }
+thead th { padding:10px 16px; text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim); background:var(--bg-surface-alt); border-bottom:1px solid var(--border); }
+tbody td { padding:12px 16px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text-muted); transition:var(--transition); }
+tbody tr { cursor:pointer; }
+tbody tr:hover td { background:var(--accent-soft); color:var(--text); }
+tbody tr:last-child td { border-bottom:none; }
+
+/* Status badges */
+.badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:var(--radius-pill); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+.badge--done { background:var(--green-soft); color:var(--green); }
+.badge--running { background:var(--amber-soft); color:var(--amber); }
+.badge--failed { background:var(--red-soft); color:var(--red); }
+.badge--pending { background:var(--bg-elevated); color:var(--text-dim); border:1px solid var(--border); }
+.badge--abandoned { background:var(--bg-elevated); color:var(--text-dim); border:1px solid var(--border); }
+
+.session-slug { font-family:var(--font-mono); font-size:12px; color:var(--accent); max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.session-time { font-family:var(--font-mono); font-size:12px; color:var(--text-dim); }
+.session-dur { font-family:var(--font-mono); font-size:12px; }
+
+/* Detail Panel */
+.detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:90; display:none; }
+.detail-overlay.open { display:block; }
+.detail-panel { position:fixed; top:0; right:-500px; width:480px; height:100vh; background:var(--bg-surface); border-left:1px solid var(--border); z-index:100; overflow-y:auto; transition:right .3s cubic-bezier(.4,0,.2,1); padding:24px; }
+.detail-panel.open { right:0; }
+.detail-close { position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:var(--radius-sm); border:1px solid var(--border); background:transparent; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; transition:var(--transition); }
+.detail-close:hover { color:var(--text); border-color:var(--text); }
+.detail-title { font-family:var(--font-serif); font-size:18px; font-weight:700; margin-bottom:20px; padding-right:36px; word-break:break-all; }
+.detail-section { margin-bottom:20px; }
+.detail-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim); margin-bottom:8px; }
+.detail-code { padding:12px; border-radius:var(--radius-sm); background:var(--bg); border:1px solid var(--border); font-family:var(--font-mono); font-size:12px; line-height:1.6; color:var(--text-muted); max-height:400px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
+
+/* Empty state */
+.empty { text-align:center; padding:60px 20px; }
+.empty__icon { font-size:40px; margin-bottom:12px; opacity:.3; }
+.empty__title { font-family:var(--font-serif); font-size:18px; margin-bottom:6px; }
+.empty__sub { font-size:13px; color:var(--text-dim); }
+</style>
+</head>
+<body>
+{% set active_nav = 'sessions' %}
+{% include "_header.html" %}
+{% include "_project_rail.html" %}
+
+<main class="main">
+  <div class="section-header">
+    <div>
+      <div class="section-title">sessions</div>
+      <div class="section-count">{{ sessions | length }} on {{ project_name or 'Scratch' }}</div>
+    </div>
+  </div>
+
+  {% if sessions %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>session</th>
+          <th>status</th>
+          <th>iters</th>
+          <th>duration</th>
+          <th>updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for name, info in sessions.items() | sort(attribute='1.updated', reverse=True) %}
+        <tr onclick="openDetail('{{ name }}')">
+          <td><span class="session-slug" data-tip="{{ name }}">{{ name }}</span></td>
+          <td>
+            {% if info.status == 'done' %}
+              <span class="badge badge--done">done</span>
+            {% elif info.status in ['planning', 'reviewing', 'spec', 'plan'] %}
+              <span class="badge badge--running">{{ info.status }}</span>
+            {% elif info.status == 'failed' %}
+              <span class="badge badge--failed">failed</span>
+            {% elif info.status == 'abandoned' %}
+              <span class="badge badge--abandoned">abandoned</span>
+            {% else %}
+              <span class="badge badge--pending">{{ info.status }}</span>
+            {% endif %}
+          </td>
+          <td style="font-family:var(--font-mono); font-size:12px;">{{ info.get('N', info.get('detail', {}).get('iterations', '?')) }}</td>
+          <td class="session-dur">
+            {% set dur = info.get('detail', {}).get('total_s', 0) %}
+            {% if dur > 3600 %}{{ "%.1f"|format(dur/3600) }}h
+            {% elif dur > 60 %}{{ "%.0f"|format(dur/60) }}m
+            {% else %}{{ "%.0f"|format(dur) }}s{% endif %}
+          </td>
+          <td class="session-time">{{ info.get('updated', '?')[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty__icon">📋</div>
+    <div class="empty__title">no sessions yet</div>
+    <div class="empty__sub">launch a pipeline to see sessions here</div>
+  </div>
+  {% endif %}
+</main>
+
+<!-- Detail Panel -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="closeDetail()">✕</button>
+  <div class="detail-title" id="detailTitle">session</div>
+
+  <div class="detail-section">
+    <div class="detail-label">plan.md</div>
+    <div class="detail-code" id="detailPlan">loading...</div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-label">reply.md</div>
+    <div class="detail-code" id="detailReply">loading...</div>
+  </div>
+</div>
+
+{% include "_setup_wizard.html" %}
+<script src="/static/qmeka-chrome.js"></script>
+<script>
+function openDetail(name) {
+  document.getElementById('detailTitle').textContent = name;
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailOverlay').classList.add('open');
+
+  fetch('/api/registry').then(r => r.json()).then(data => {
+    const info = data.sessions?.[name];
+    if (info) {
+      const iter = info.detail?.iter || info.detail?.iterations || 1;
+      fetch(`/api/artifact/${name}/${iter}/plan.md`).then(r => r.json()).then(d => {
+        document.getElementById('detailPlan').textContent = d.content || '(no plan)';
+      });
+      fetch(`/api/artifact/${name}/${iter}/reply.md`).then(r => r.json()).then(d => {
+        document.getElementById('detailReply').textContent = d.content || '(no reply)';
+      });
+    }
+  });
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+</script>
+</body>
+</html>
+
+

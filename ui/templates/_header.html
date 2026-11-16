@@ -1,0 +1,37 @@
+<header class="header">
+  <div class="header__inner">
+    <a href="/" class="logo">/Qmeka<span class="logo__blink"></span></a>
+    <nav class="nav">
+      <a href="/" class="nav__link{% if active_nav=='dashboard' %} active{% endif %}" data-tip="Prompt + live run">start</a>
+      <a href="/pipeline" class="nav__link{% if active_nav=='pipeline' %} active{% endif %}" data-tip="Build the graph">pipeline</a>
+      <a href="/history" class="nav__link{% if active_nav=='sessions' %} active{% endif %}" data-tip="Runs of this project">sessions</a>
+      <a href="/debug" class="nav__link{% if active_nav=='debug' %} active{% endif %}" data-tip="Health &amp; setup">debug</a>
+    </nav>
+    <div class="header__right">
+      {% if show_logs_toggle %}
+      <button class="sidebar-toggle" id="sidebarToggle" type="button" data-tip="Logs sidebar">
+        <span class="icon">▸</span> logs
+      </button>
+      {% endif %}
+      <div id="headerReady" class="ready-pills" aria-label="readiness">
+        <span class="ready-dot ready-dot--pending"></span>
+        <span class="ready-dot ready-dot--pending"></span>
+        <span class="ready-dot ready-dot--pending"></span>
+        <span class="ready-dot ready-dot--pending"></span>
+        <span class="ready-dot ready-dot--pending"></span>
+        <span class="ready-dot ready-dot--pending"></span>
+      </div>
+      <div class="theme-toggle">
+        <button type="button" class="theme-btn" data-theme="dark" data-tip="Dark Warm Honey"></button>
+        <button type="button" class="theme-btn" data-theme="light" data-tip="Light Paper"></button>
+        <button type="button" class="theme-btn" data-theme="cyber" data-tip="Cyber Phosphor"></button>
+      </div>
+      <button type="button" class="stats-pill" id="connectionPill" data-tip="Switch project">
+        <span class="stats-pill__dot" id="connectionDot"></span>
+        <span class="stats-pill__label" id="connectionLabel">connected</span>
+        <span class="stats-pill__rule">|</span>
+        <span class="stats-pill__session" id="currentSession">Scratch</span>
+      </button>
+    </div>
+  </div>
+</header>
